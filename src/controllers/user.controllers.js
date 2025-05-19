@@ -6,7 +6,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, fullName, password } = req.body;
-  console.log("email", email);
+  // console.log("email", email);
 
   if (
     [username, email, fullName, password].some((field) => field?.trim() === "")
@@ -14,16 +14,20 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new apiError("Please fill all the fields", 400);
   }
 
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
 
   if (existedUser) {
     throw new apiError("User already exists", 409);
   }
+  // console.log(req.files);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path
+  }
 
   if (!avatarLocalPath) {
     throw new apiError("Please upload an avatar", 400);
@@ -54,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   return res.status(201).json(
-    apiResponse(200, createdUser, "User created successfully")
+    new apiResponse(200, createdUser, "User created successfully")
   );
 
 
