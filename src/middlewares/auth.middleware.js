@@ -1,0 +1,27 @@
+import { apiError } from "../utils/apiError"
+import { asyncHandler } from "../utils/asyncHandler"
+import jwt from "jsonwebtoken"
+import { User } from "../models/user.model"
+
+export const verifyJWT = asyncHandler(async (req, _, next) => {
+    try {
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
+    
+        if (!token) {
+            throw new apiError( "Unauthorized request", 401 )
+        }
+    
+        const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET)
+    
+        const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+    
+        if (!user) {
+            throw new apiError("Invalid Access Token", 404)
+        }
+    
+        req.user = user
+        next()
+    } catch (error) {
+        throw new apiError( error?.message ||"Invalid Access Token", 401)
+    }
+})
